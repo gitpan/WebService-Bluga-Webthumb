@@ -1,0 +1,214 @@
+package WebService::Bluga::Webthumb;
+
+use warnings;
+use strict;
+use Carp;
+use Digest::MD5;
+use URI;
+use POSIX qw(strftime);
+
+=head1 NAME
+
+WebService::Bluga::Webthumb - fetch website thumbnails via webthumb.bluga.net
+
+=cut
+
+our $VERSION = '0.01';
+
+=head1 SYNOPSIS
+
+    use WebService::Bluga::Webthumb;
+    my $wt = WebService::Bluga::Webthumb->new(
+        user    => $user_id,
+        api_key => $api_key,
+        size    => $size,  # small, medium1, medium2, large (default: medium)
+        cache   => $cache_days, # optional - default 14
+    );
+
+    # get a thumbnail URL using the default settings
+    my $thumb_url = wt->thumb_url($url);
+
+    # Get a thumbnail URL overriding some settings:
+    my $thumb_url = $wt->thumb_url($url, { size => 'large' });
+
+
+
+=head1 Class methods
+
+=over 4
+
+=item new
+
+Create a new WebService::Bluga::Webthumb object.  Takes the following params:
+
+=over 4
+
+=item user
+
+Your webthumb user ID, available from your L<http://webthumb.bluga.net/user>
+page.
+
+=item api_key
+
+Your webthumb API key. also available from your user page.  (This is used to
+construct the hash of the thumbnail URL, but not sent directly.)
+
+=item size
+
+The size of the thumbnail to generate.  Size can be:
+
+=over 4
+
+=item * small - 80x60
+
+=item * medium - 160x120
+
+=item * medium2 - 320x240
+
+=item * large - 640x480
+
+=back
+
+
+=item cache
+
+How many days a generated thumbnail can be cached on the webthumb servers before
+a fresh one is generated.  Generating a thumbnail uses a credit whereas serving
+up a cached one uses a fraction of a credit, so don't set this too low.
+
+If not specified, defaults to 14 days.
+
+=back
+
+=cut
+
+sub new {
+    my $class = shift;
+    if (@_ % 2 != 0) {
+        croak "Uneven number of parameters provided";
+    }
+
+    my %params = @_;
+    
+    # TODO: more extensive validation
+    if (!$params{user} || !$params{api_key}) {
+        croak "'user' and 'api_key' params must be provided";
+    }
+
+    if (exists $params{size} 
+        && !grep { $params{size} eq $_ } qw(small medium medium2 large)
+    ) {
+        croak "Invalid size $params{size} supplied!";
+    } elsif (!exists $params{size}) {
+        $params{size} = 'medium';
+    }
+
+    my $self = \%params;
+    bless $self => $class;
+    return $self;
+}
+
+=back
+
+=head1 Instance methods
+
+=over 4
+
+=item easy_thumb
+
+Given an URL, and optionally C<size> / C<cache> params to override those from
+the object, returns an URL to the thumbnail, to use in an IMG tag.
+
+=cut
+
+sub easy_thumb {
+    my ($self, $url, $params) = @_;
+
+    # Get our params, use defaults from the object
+    $params ||= {};
+    $params->{$_} ||= $self->{$_}
+        for qw(size cache);
+
+    # Generate the appropriate URL:
+    my $uri = URI->new('http://webthumb.bluga.net/easythumb.php');
+    $uri->query_form(
+        url   => $url,
+        size  => $params->{size},
+        cache => $params->{cache},
+        user  => $self->{user},
+        hash  => Digest::MD5::md5_hex(join '',
+            strftime("%Y%m%d", gmtime(time())),
+            $url,
+            $self->{api_key}
+        ),
+    );
+    return $uri->as_string;
+}
+
+=back
+
+
+
+
+=head1 AUTHOR
+
+David Precious, C<< <davidp at preshweb.co.uk> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to C<bug-webservice-bluga-webthumb at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WebService-Bluga-Webthumb>.  I will be notified, and then you'll
+automatically be notified of progress on your bug as I make changes.
+
+=head1 SEE ALSO
+
+See the API documentation at L<http://webthumb.bluga.net/api-easythumb>
+
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc WebService::Bluga::Webthumb
+
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=WebService-Bluga-Webthumb>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/WebService-Bluga-Webthumb>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/WebService-Bluga-Webthumb>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/WebService-Bluga-Webthumb/>
+
+=back
+
+
+=head1 ACKNOWLEDGEMENTS
+
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2011 David Precious.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See http://dev.perl.org/licenses/ for more information.
+
+
+=cut
+
+1; # End of WebService::Bluga::Webthumb
