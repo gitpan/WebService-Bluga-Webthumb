@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               WebService-Bluga-Webthumb
-version:            0.02
+version:            0.03
 abstract:           fetch website thumbnails via webthumb.bluga.net
 author:
     - David Precious <davidp@preshweb.co.uk>

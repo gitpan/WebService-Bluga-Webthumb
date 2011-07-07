@@ -13,7 +13,7 @@ WebService::Bluga::Webthumb - fetch website thumbnails via webthumb.bluga.net
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -21,7 +21,7 @@ our $VERSION = '0.02';
     my $wt = WebService::Bluga::Webthumb->new(
         user    => $user_id,
         api_key => $api_key,
-        size    => $size,  # small, medium1, medium2, large (default: medium)
+        size    => $size,  # small, medium, medium2, large (default: medium)
         cache   => $cache_days, # optional - default 14
     );
 
@@ -103,6 +103,10 @@ sub new {
         $params{size} = 'medium';
     }
 
+    if (!exists $params{cache}) {
+        $params{cache} = 14;
+    }
+
     my $self = \%params;
     bless $self => $class;
     return $self;
@@ -167,6 +171,11 @@ sub easy_thumb { shift->thumb_url(@_); }
 =head1 AUTHOR
 
 David Precious, C<< <davidp at preshweb.co.uk> >>
+
+=head1 ACKNOWLEDGEMENTS
+
+James Ronan
+
 
 =head1 CONTRIBUTING
 
